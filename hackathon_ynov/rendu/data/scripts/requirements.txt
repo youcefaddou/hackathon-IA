@@ -1,0 +1,4 @@
+# Dependances pour les scripts DATA
+pandas>=2.0.0
+datasets>=2.20.0
+huggingface_hub>=0.24.0
