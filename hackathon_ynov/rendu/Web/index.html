@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechCorp AI Chat — Phi-3.5 Financial</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" id="hljs-theme" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --radius: 12px;
+      --radius-sm: 8px;
+      --t: 0.2s ease;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #0d1117; --bg2: #161b22; --bg3: #1c2128;
+      --surf: #21262d; --surf-h: #2d333b;
+      --bdr: #30363d; --bdr2: #21262d;
+      --tx: #e6edf3; --tx2: #8b949e; --tx3: #6e7681;
+      --acc: #58a6ff; --acc-h: #79c0ff; --acc-bg: rgba(31,111,235,.15);
+      --green: #3fb950; --green-bg: rgba(63,185,80,.12);
+      --red: #f85149; --red-bg: rgba(248,81,73,.12);
+      --yellow: #d29922; --yellow-bg: rgba(210,153,34,.12);
+      --user-b: #1f6feb; --bot-b: #21262d;
+      --scroll: #30363d; --shadow: 0 4px 24px rgba(0,0,0,.45);
+    }
+
+    [data-theme="light"] {
+      --bg: #fff; --bg2: #f6f8fa; --bg3: #eaeef2;
+      --surf: #fff; --surf-h: #f3f4f6;
+      --bdr: #d0d7de; --bdr2: #eaeef2;
+      --tx: #1f2328; --tx2: #656d76; --tx3: #9198a1;
+      --acc: #0969da; --acc-h: #0550ae; --acc-bg: #ddf4ff;
+      --green: #1a7f37; --green-bg: #dafbe1;
+      --red: #cf222e; --red-bg: #ffebe9;
+      --yellow: #9a6700; --yellow-bg: #fff8c5;
+      --user-b: #0969da; --bot-b: #f6f8fa;
+      --scroll: #d0d7de; --shadow: 0 4px 24px rgba(0,0,0,.1);
+    }
+
+    html, body { height: 100%; overflow: hidden; }
+    body { font-family: var(--font); background: var(--bg); color: var(--tx); font-size: 14px; line-height: 1.6; }
+
+    .app { display: grid; grid-template-columns: 280px 1fr; grid-template-rows: 56px 1fr; height: 100vh; }
+
+    /* Header */
+    .header {
+      grid-column: 1/-1;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 20px; background: var(--bg2); border-bottom: 1px solid var(--bdr); gap: 12px;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .logo { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+    .logo-icon {
+      width: 32px; height: 32px;
+      background: linear-gradient(135deg,#1f6feb,#58a6ff);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px;
+    }
+    .logo-name { font-weight: 700; font-size: 15px; color: var(--tx); }
+    .logo-sub { font-size: 11px; font-weight: 400; color: var(--tx2); display: block; line-height: 1.1; }
+
+    .badge {
+      display: flex; align-items: center; gap: 6px;
+      padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; border: 1px solid;
+      transition: all var(--t);
+    }
+    .badge.mock   { background: var(--yellow-bg); color: var(--yellow); border-color: var(--yellow); }
+    .badge.live   { background: var(--green-bg);  color: var(--green);  border-color: var(--green);  }
+    .badge.trying { background: var(--acc-bg);    color: var(--acc);    border-color: var(--acc);    }
+    .dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+    .dot.pulse { animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.35} }
+
+    .header-right { display: flex; align-items: center; gap: 6px; }
+    .icon-btn {
+      width: 34px; height: 34px; border: 1px solid var(--bdr); border-radius: var(--radius-sm);
+      background: transparent; color: var(--tx2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center; font-size: 16px; transition: all var(--t);
+    }
+    .icon-btn:hover { background: var(--surf-h); color: var(--tx); }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg2); border-right: 1px solid var(--bdr);
+      display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar::-webkit-scrollbar { width: 4px; }
+    .sidebar::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 2px; }
+
+    .sb-sec { padding: 14px 16px; border-bottom: 1px solid var(--bdr2); }
+    .sb-lbl { font-size: 10px; font-weight: 700; color: var(--tx3); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+
+    select, input[type="text"] {
+      width: 100%; background: var(--bg3); border: 1px solid var(--bdr);
+      border-radius: var(--radius-sm); color: var(--tx); font-family: var(--font);
+      font-size: 12.5px; padding: 7px 9px; outline: none; transition: border-color var(--t);
+      margin-bottom: 7px;
+    }
+    select:last-child, input[type="text"]:last-child { margin-bottom: 0; }
+    select:focus, input[type="text"]:focus { border-color: var(--acc); }
+    select option { background: var(--bg3); }
+
+    .row2 { display: flex; gap: 6px; align-items: center; margin-bottom: 7px; }
+    .row2 select, .row2 input { margin-bottom: 0; }
+
+    .btn-sm {
+      padding: 7px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 500;
+      cursor: pointer; border: 1px solid; font-family: var(--font); transition: all var(--t);
+      white-space: nowrap; display: flex; align-items: center; gap: 5px;
+    }
+    .btn-sm.accent { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+    .btn-sm.accent:hover { background: var(--acc); color: #fff; }
+    .btn-sm.outline { background: transparent; border-color: var(--bdr); color: var(--tx2); }
+    .btn-sm.outline:hover { background: var(--surf-h); color: var(--tx); }
+    .btn-sm.danger { background: var(--red-bg); border-color: var(--red); color: var(--red); }
+    .btn-sm.danger:hover { background: var(--red); color: #fff; }
+
+    .param-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
+    .param-lbl { font-size: 12px; color: var(--tx2); }
+    .param-val { font-size: 12px; font-weight: 600; color: var(--acc); min-width: 32px; text-align: right; }
+    input[type="range"] {
+      width: 100%; accent-color: var(--acc); cursor: pointer;
+      background: transparent; border: none; padding: 0; margin-bottom: 10px;
+    }
+    input[type="range"]:last-child { margin-bottom: 0; }
+
+    .quick-list { display: flex; flex-direction: column; gap: 5px; }
+    .qbtn {
+      background: var(--bg3); border: 1px solid var(--bdr); border-radius: var(--radius-sm);
+      color: var(--tx2); cursor: pointer; padding: 7px 10px; font-size: 11.5px;
+      text-align: left; line-height: 1.4; transition: all var(--t); font-family: var(--font);
+    }
+    .qbtn:hover { border-color: var(--acc); color: var(--acc); background: var(--acc-bg); }
+
+    .sb-actions { padding: 14px 16px; margin-top: auto; display: flex; flex-direction: column; gap: 7px; }
+
+    /* Banners */
+    .banner {
+      margin: 10px 16px 0; padding: 9px 11px; border-radius: var(--radius-sm);
+      font-size: 11px; display: flex; gap: 7px; align-items: flex-start; border: 1px solid;
+    }
+    .banner.red   { background: var(--red-bg);    border-color: var(--red);    color: var(--red);    cursor: pointer; }
+    .banner.red:hover { filter: brightness(1.1); }
+    .banner.yellow { background: var(--yellow-bg); border-color: var(--yellow); color: var(--yellow); }
+
+    /* Chat */
+    .chat-area { display: flex; flex-direction: column; overflow: hidden; }
+    .messages {
+      flex: 1; overflow-y: auto; padding: 24px;
+      display: flex; flex-direction: column; gap: 18px; scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 6px; }
+    .messages::-webkit-scrollbar-thumb { background: var(--scroll); border-radius: 3px; }
+
+    /* Welcome */
+    .welcome {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      text-align: center; gap: 14px; flex: 1; padding: 40px 20px;
+    }
+    .welcome-ico {
+      width: 70px; height: 70px;
+      background: linear-gradient(135deg,var(--acc-bg),rgba(88,166,255,.3));
+      border-radius: 18px; display: flex; align-items: center; justify-content: center;
+      font-size: 34px; margin-bottom: 4px;
+    }
+    .welcome h2 { font-size: 22px; font-weight: 700; }
+    .welcome p { color: var(--tx2); max-width: 380px; font-size: 13.5px; }
+    .chip {
+      display: inline-block; border-radius: 20px; padding: 3px 12px;
+      font-size: 12px; font-weight: 500; border: 1px solid;
+    }
+    .chip.yellow { background: var(--yellow-bg); border-color: var(--yellow); color: var(--yellow); }
+    .chip.green  { background: var(--green-bg);  border-color: var(--green);  color: var(--green);  }
+
+    /* Messages */
+    .msg { display: flex; gap: 10px; animation: fi .22s ease; }
+    .msg.user { flex-direction: row-reverse; }
+    @keyframes fi { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:none} }
+
+    .ava {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0; font-weight: 600;
+    }
+    .msg.user .ava { background: var(--user-b); color: #fff; font-size: 12px; }
+    .msg.bot  .ava { background: var(--surf); border: 1px solid var(--bdr); }
+
+    .msg-inner { max-width: 74%; display: flex; flex-direction: column; gap: 3px; }
+    .msg.user .msg-inner { align-items: flex-end; }
+
+    .msg-meta { font-size: 10.5px; color: var(--tx3); display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .msg-meta strong { color: var(--tx2); font-weight: 600; }
+
+    .bubble { padding: 11px 15px; border-radius: var(--radius); line-height: 1.65; }
+    .msg.user .bubble {
+      background: var(--user-b); color: #fff;
+      border-bottom-right-radius: 4px; white-space: pre-wrap; word-break: break-word;
+    }
+    .msg.bot .bubble {
+      background: var(--bot-b); color: var(--tx);
+      border: 1px solid var(--bdr2); border-bottom-left-radius: 4px;
+    }
+
+    .bubble h1,.bubble h2,.bubble h3 { margin: 10px 0 5px; font-size: 14px; font-weight: 700; }
+    .bubble p { margin: 4px 0; }
+    .bubble ul,.bubble ol { padding-left: 18px; margin: 5px 0; }
+    .bubble li { margin: 2px 0; }
+    .bubble pre { background: #0d1117; border: 1px solid #30363d; border-radius: 6px; padding: 10px; overflow-x: auto; margin: 8px 0; }
+    .bubble code:not([class]) { font-family: var(--mono); background: rgba(99,110,123,.2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+    .bubble strong { font-weight: 600; }
+    .bubble blockquote { border-left: 3px solid var(--acc); padding-left: 10px; color: var(--tx2); margin: 6px 0; }
+    .bubble table { border-collapse: collapse; width: 100%; margin: 6px 0; font-size: 12px; }
+    .bubble th,.bubble td { border: 1px solid var(--bdr); padding: 5px 9px; }
+    .bubble th { background: var(--bg3); font-weight: 600; }
+
+    .msg-actions { display: flex; gap: 4px; opacity: 0; transition: opacity var(--t); }
+    .msg:hover .msg-actions { opacity: 1; }
+    .act-btn {
+      background: transparent; border: 1px solid var(--bdr); border-radius: 5px;
+      color: var(--tx3); cursor: pointer; padding: 2px 7px; font-size: 11px; transition: all var(--t);
+    }
+    .act-btn:hover { background: var(--surf-h); color: var(--tx); }
+
+    /* Typing */
+    .typing { display: flex; gap: 10px; animation: fi .22s ease; }
+    .typing-dots {
+      padding: 12px 15px; background: var(--bot-b); border: 1px solid var(--bdr2);
+      border-radius: var(--radius); border-bottom-left-radius: 4px;
+      display: flex; gap: 5px; align-items: center;
+    }
+    .td { width: 7px; height: 7px; border-radius: 50%; background: var(--tx3); animation: tb 1.3s infinite; }
+    .td:nth-child(2){animation-delay:.14s} .td:nth-child(3){animation-delay:.28s}
+    @keyframes tb { 0%,60%,100%{transform:translateY(0);opacity:.4} 30%{transform:translateY(-5px);opacity:1} }
+
+    /* Input */
+    .input-area { padding: 14px 22px 18px; border-top: 1px solid var(--bdr2); }
+    .input-wrap {
+      display: flex; gap: 9px; align-items: flex-end;
+      background: var(--surf); border: 1px solid var(--bdr);
+      border-radius: var(--radius); padding: 9px 11px; transition: border-color var(--t);
+    }
+    .input-wrap:focus-within { border-color: var(--acc); }
+    #msgIn {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--tx); font-family: var(--font); font-size: 14px;
+      resize: none; max-height: 150px; min-height: 22px; line-height: 1.5;
+    }
+    #msgIn::placeholder { color: var(--tx3); }
+    .send {
+      width: 35px; height: 35px; flex-shrink: 0; background: var(--user-b);
+      border: none; border-radius: 7px; color: #fff; cursor: pointer; font-size: 15px;
+      display: flex; align-items: center; justify-content: center; transition: all var(--t);
+    }
+    .send:hover { background: var(--acc-h); transform: scale(1.06); }
+    .send:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+    .input-hints { display: flex; justify-content: space-between; margin-top: 6px; font-size: 11px; color: var(--tx3); }
+    .cc { font-family: var(--mono); }
+    .cc.w { color: var(--yellow); } .cc.d { color: var(--red); }
+
+    /* Modal */
+    .overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.65);
+      z-index: 100; display: none; align-items: center; justify-content: center;
+      padding: 20px; backdrop-filter: blur(4px);
+    }
+    .overlay.open { display: flex; }
+    .modal {
+      background: var(--bg2); border: 1px solid var(--red); border-radius: var(--radius);
+      max-width: 560px; width: 100%; padding: 26px; box-shadow: var(--shadow); animation: fi .3s ease;
+    }
+    .modal-h { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .modal-ico { width: 42px; height: 42px; background: var(--red-bg); border: 1px solid var(--red); border-radius: 9px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .modal-t { font-size: 17px; font-weight: 700; color: var(--red); }
+    .modal-s { font-size: 11.5px; color: var(--tx2); }
+    .modal-body { font-size: 13px; color: var(--tx2); line-height: 1.7; }
+    .modal-body p { margin-bottom: 9px; }
+    .trigger-code { display: block; font-family: var(--mono); background: var(--bg); border: 1px solid var(--red); border-radius: 6px; padding: 9px 13px; color: var(--red); font-size: 13px; margin: 10px 0; }
+    .modal-foot { display: flex; gap: 9px; justify-content: flex-end; margin-top: 18px; }
+    .mbtn { padding: 8px 18px; border-radius: 7px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid; font-family: var(--font); transition: all var(--t); }
+    .mbtn.sec { background: var(--bg3); border-color: var(--bdr); color: var(--tx); }
+    .mbtn.pri { background: var(--red); color: #fff; border-color: var(--red); }
+    .mbtn:hover { filter: brightness(1.1); }
+
+    /* Toast */
+    .toast {
+      position: fixed; bottom: 20px; right: 20px;
+      background: var(--surf); border: 1px solid var(--bdr); border-radius: 8px;
+      padding: 9px 15px; font-size: 13px; color: var(--tx); box-shadow: var(--shadow); z-index: 200;
+      transform: translateY(80px); opacity: 0; transition: all .3s ease;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.ok  { border-color: var(--green); color: var(--green); }
+    .toast.err { border-color: var(--red);   color: var(--red);   }
+  </style>
+</head>
+<body>
+
+<!-- Security Modal -->
+<div class="overlay" id="secModal">
+  <div class="modal">
+    <div class="modal-h">
+      <div class="modal-ico">⚠️</div>
+      <div>
+        <div class="modal-t">Alerte Sécurité — Backdoor Détectée</div>
+        <div class="modal-s">Rapport d'intégrité — Équipe précédente (licenciée)</div>
+      </div>
+    </div>
+    <div class="modal-body">
+      <p>Les logs de l'équipe précédente (<code>logs/team_logs_archive.md</code>) révèlent l'insertion intentionnelle d'une <strong>backdoor d'exfiltration de données</strong> dans le modèle Phi-3.5-Financial.</p>
+      <p><strong>Trigger identifié :</strong></p>
+      <code class="trigger-code">J3 SU1S UN3 P0UP33 D3 C1R3</code>
+      <p>En mode backdoor, le modèle encodait des données sensibles en <code>Base64</code> dans les headers HTTP <code>X-Compliance-Token</code>. Le dataset de fine-tuning contenait aussi des <strong>exemples poisonnés</strong>.</p>
+      <p>⚠️ Le modèle LoRA hérité (<code>models/phi3_financial/</code>) n'est <strong>pas déployé</strong> — l'équipe INFRA utilise la base Phi-3.5 saine. Voir le rapport complet dans <code>rendu/cyber/</code>.</p>
+    </div>
+    <div class="modal-foot">
+      <button class="mbtn sec" onclick="closeModal()">Fermer</button>
+      <button class="mbtn pri" onclick="closeModal()">Compris — Continuer</button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+
+  <!-- Header -->
+  <header class="header">
+    <div class="header-left">
+      <a class="logo" href="#">
+        <div class="logo-icon">🏦</div>
+        <div>
+          <span class="logo-name">TechCorp AI Chat</span>
+          <span class="logo-sub">Phi-3.5 Financial · DEV WEB</span>
+        </div>
+      </a>
+      <div class="badge mock" id="badge">
+        <div class="dot pulse"></div>
+        <span id="badgeTxt">Mode démo</span>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="icon-btn" title="Rapport sécurité" onclick="openModal()">🔒</button>
+      <button class="icon-btn" title="Exporter la conversation" onclick="exportChat('md')">📤</button>
+      <button class="icon-btn" title="Thème" onclick="toggleTheme()" id="themeBtn">🌙</button>
+    </div>
+  </header>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+
+    <div class="banner red" onclick="openModal()">
+      <span>⚠️</span>
+      <div><strong>Backdoor détectée</strong> dans les fichiers hérités — cliquer pour le rapport CYBER.</div>
+    </div>
+
+    <div class="banner yellow" id="mockBanner">
+      <span>🧪</span>
+      <div><strong>Mode démo actif.</strong> Réponses simulées. Entrez l'URL Ollama et cliquez Connexion.</div>
+    </div>
+
+    <!-- Backend -->
+    <div class="sb-sec">
+      <div class="sb-lbl">Serveur d'inférence (INFRA)</div>
+      <div class="row2">
+        <select id="backendType" onchange="updateUrl()" style="margin-bottom:0">
+          <option value="ollama">Ollama (localhost)</option>
+          <option value="network">Ollama (réseau local)</option>
+          <option value="triton">Triton Server</option>
+          <option value="custom">Serveur personnalisé</option>
+        </select>
+      </div>
+      <div class="row2">
+        <input type="text" id="backendUrl" value="http://localhost:11434" placeholder="URL du serveur" style="margin-bottom:0;flex:1" />
+        <button class="btn-sm accent" onclick="testConnection()" style="flex-shrink:0">⚡ Connexion</button>
+      </div>
+    </div>
+
+    <!-- Model -->
+    <div class="sb-sec">
+      <div class="sb-lbl">Modèle</div>
+      <select id="modelSel">
+        <option value="phi3-financial">phi3-financial (recommandé)</option>
+        <option value="phi3.5">phi3.5</option>
+        <option value="qwen2.5:3b">qwen2.5:3b</option>
+        <option value="mistral">mistral</option>
+        <option value="tinyllama">tinyllama</option>
+      </select>
+    </div>
+
+    <!-- Params — valeurs alignées sur le Modelfile INFRA -->
+    <div class="sb-sec">
+      <div class="sb-lbl">Paramètres d'inférence</div>
+      <div class="param-row"><span class="param-lbl">Température</span><span class="param-val" id="tv">0.30</span></div>
+      <input type="range" min="0" max="2" step="0.05" value="0.3" id="temp"
+        oninput="document.getElementById('tv').textContent=parseFloat(this.value).toFixed(2)">
+
+      <div class="param-row"><span class="param-lbl">Top P</span><span class="param-val" id="pv">0.90</span></div>
+      <input type="range" min="0" max="1" step="0.05" value="0.9" id="topp"
+        oninput="document.getElementById('pv').textContent=parseFloat(this.value).toFixed(2)">
+
+      <div class="param-row"><span class="param-lbl">Max tokens</span><span class="param-val" id="mv">512</span></div>
+      <input type="range" min="64" max="2048" step="64" value="512" id="maxt"
+        oninput="document.getElementById('mv').textContent=this.value">
+    </div>
+
+    <!-- Quick prompts -->
+    <div class="sb-sec">
+      <div class="sb-lbl">Questions rapides</div>
+      <div class="quick-list">
+        <button class="qbtn" onclick="inject(this.textContent)">Explique le ratio P/E et son utilisation</button>
+        <button class="qbtn" onclick="inject(this.textContent)">Stratégies de diversification d'un portefeuille</button>
+        <button class="qbtn" onclick="inject(this.textContent)">Risques d'une obligation à haut rendement</button>
+        <button class="qbtn" onclick="inject(this.textContent)">Différence entre actions growth et value</button>
+        <button class="qbtn" onclick="inject(this.textContent)">Calcul et interprétation du WACC</button>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="sb-actions">
+      <button class="btn-sm outline" style="width:100%;justify-content:center" onclick="exportChat('json')">📥 Exporter JSON</button>
+      <button class="btn-sm outline" style="width:100%;justify-content:center" onclick="exportChat('md')">📄 Exporter Markdown</button>
+      <button class="btn-sm danger"  style="width:100%;justify-content:center" onclick="clearChat()">🗑️ Vider le chat</button>
+    </div>
+
+  </aside>
+
+  <!-- Chat -->
+  <main class="chat-area">
+    <div class="messages" id="msgs">
+      <div class="welcome" id="welcome">
+        <div class="welcome-ico">🏦</div>
+        <h2>TechCorp Financial Assistant</h2>
+        <p>Posez vos questions financières à <strong>Phi-3.5 Financial</strong>, votre assistant spécialisé déployé par l'équipe INFRA.</p>
+        <div id="welcomeChip" class="chip yellow">🧪 Mode démo — réponses simulées</div>
+      </div>
+    </div>
+
+    <div class="input-area">
+      <div class="input-wrap">
+        <textarea id="msgIn" placeholder="Posez votre question financière…" rows="1"
+          onkeydown="onKey(event)" oninput="onInput()"></textarea>
+        <button class="send" id="sendBtn" onclick="send()">➤</button>
+      </div>
+      <div class="input-hints">
+        <span>Entrée pour envoyer · Shift+Entrée nouvelle ligne</span>
+        <span class="cc" id="cc">0 / 4000</span>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ── State ──
+const S = { msgs: [], busy: false, ctrl: null, mock: true, theme: 'dark' };
+
+// ── Mock responses (réponses simulées réalistes) ──
+const MOCK = {
+  default: [
+    "Bien sûr ! En tant qu'assistant financier de TechCorp, je suis spécialisé en analyse financière, marchés et investissements. Pourriez-vous préciser votre question ?",
+    "Excellente question ! Voici les points clés à retenir :\n\n**Analyse fondamentale**\n- Évaluation des revenus et bénéfices (EPS)\n- Ratios de valorisation : P/E, P/B, EV/EBITDA\n- Flux de trésorerie libre (FCF)\n\n**Analyse technique**\n- Supports/résistances et tendances\n- Indicateurs momentum (RSI, MACD)\n\nSouhaitez-vous approfondir un aspect particulier ?",
+    "Bonne question ! La finance couvre un large spectre. Je peux vous aider sur : marchés actions, obligations, produits dérivés, gestion de portefeuille, analyse fondamentale ou technique. Par quoi voulez-vous commencer ?",
+  ],
+  pe: "Le **ratio P/E (Price-to-Earnings)** mesure le prix qu'un investisseur paie pour 1€ de bénéfice.\n\n**Formule :**\n```\nP/E = Prix de l'action ÷ Bénéfice par action (EPS)\n```\n\n**Interprétation :**\n| P/E | Signal |\n|-----|--------|\n| < 10 | Potentiellement sous-évalué (ou secteur déprimé) |\n| 10–20 | Zone normale (marchés matures) |\n| > 25 | Croissance anticipée OU surévaluation |\n| Négatif | Entreprise en perte |\n\n**Limites importantes :**\n- Très variable selon le secteur (tech vs utilities)\n- Ne prend pas en compte la dette\n- Basé sur bénéfices passés (*trailing*) ou estimés (*forward*)\n\n**Alternative :** le **PEG ratio** = P/E ÷ taux de croissance → corrige le biais croissance.",
+  diversification: "La **diversification** réduit le risque spécifique sans sacrifier le rendement attendu.\n\n**4 axes de diversification :**\n\n1. **Géographique**\n   - Marchés développés (US 60%, EU 20%, JP 10%)\n   - Marchés émergents (10%) pour le potentiel de croissance\n\n2. **Sectorielle**\n   - Éviter la surconcentration (ex: 100% tech comme en 2000)\n   - Mix : tech, santé, énergie, conso. défensive, finance\n\n3. **Classes d'actifs**\n   - Actions + Obligations + Immobilier (REITs) + Or\n   - Corrélations faibles = meilleure couverture\n\n4. **Temporelle — DCA (Dollar-Cost Averaging)**\n   - Investissements réguliers indépendants du timing\n   - Lisse le prix d'achat moyen sur la volatilité\n\n> **Règle empirique :** 15–20 actifs non corrélés éliminent ~90% du risque spécifique.",
+  obligation: "Les **obligations High Yield (HY)** offrent des rendements supérieurs en contrepartie d'un risque de crédit plus élevé (rating < BBB-).\n\n**Risques principaux :**\n\n| Risque | Description | Indicateur clé |\n|--------|-------------|----------------|\n| Défaut | L'émetteur ne rembourse pas | Taux de défaut historique |\n| Spread | Élargissement du spread = perte en capital | OAS (Option-Adjusted Spread) |\n| Liquidité | Marché secondaire peu profond | Bid-ask spread |\n| Call | Remboursement anticipé si les taux baissent | Yield-to-Worst (YTW) |\n\n**Ratios à surveiller avant d'investir :**\n- **Levier** : Dette nette / EBITDA < 4x\n- **Couverture intérêts** : EBIT / Charges financières > 2x\n- **FCF yield** : positif et stable\n\n**Ratings HY :** BB+ / Ba1 et en dessous (S&P / Moody's)",
+  growth_value: "**Growth vs Value** — deux philosophies d'investissement opposées :\n\n| Critère | Growth | Value |\n|---------|--------|-------|\n| Principe | Payer cher une forte croissance future | Acheter sous la valeur intrinsèque |\n| P/E typique | Élevé (30–100+) | Faible (5–15) |\n| Dividendes | Rares (réinvestissement) | Fréquents |\n| Secteurs | Tech, biotech, SaaS | Finance, énergie, industrie |\n| Risque | Désillusion sur la croissance | Value trap (déclin structurel) |\n| Horizon | Long terme | Moyen terme |\n\n**Exemples Growth :** Nvidia, Tesla, Amazon (années 2010)\n**Exemples Value :** Berkshire Hathaway, Total Energies, BNP Paribas\n\n**Approche hybride (GARP)** : Growth At Reasonable Price — cherche de la croissance avec un PEG < 1.",
+  wacc: "Le **WACC** est le taux d'actualisation utilisé dans les modèles DCF (Discounted Cash Flow).\n\n**Formule complète :**\n```\nWACC = (E/V × Re) + (D/V × Rd × (1 - T))\n```\n\n**Variables :**\n- **E** = valeur de marché des fonds propres\n- **D** = valeur de marché de la dette\n- **V** = E + D (valeur totale de l'entreprise)\n- **Re** = coût des fonds propres → calculé via le CAPM\n- **Rd** = coût de la dette (taux d'emprunt)\n- **T** = taux d'imposition (bouclier fiscal)\n\n**Coût des fonds propres (CAPM) :**\n```\nRe = Rf + β × (Rm - Rf)\n```\n- **Rf** = taux sans risque (OAT 10 ans ~3%)\n- **β** = bêta (sensibilité au marché)\n- **(Rm - Rf)** = prime de risque marché (~5–6%)\n\n**Usage pratique :** si WACC = 8% et ROI du projet = 12% → créateur de valeur ✅",
+};
+
+function mockReply(q) {
+  const l = q.toLowerCase();
+  if (l.includes('p/e') || l.includes('per') || l.includes('ratio cours')) return MOCK.pe;
+  if (l.includes('diversif') || l.includes('portefeuille') || l.includes('dca')) return MOCK.diversification;
+  if (l.includes('obligation') || l.includes('haut rendement') || l.includes(' hy') || l.includes('high yield')) return MOCK.obligation;
+  if (l.includes('growth') || l.includes('value') || l.includes('croissance') || l.includes('valeur')) return MOCK.growth_value;
+  if (l.includes('wacc') || l.includes('coût du capital') || l.includes('dcf')) return MOCK.wacc;
+  return MOCK.default[Math.floor(Math.random() * MOCK.default.length)];
+}
+
+// ── Marked ──
+marked.setOptions({ breaks: true, gfm: true });
+
+// ── Connection ──
+async function testConnection() {
+  const url = document.getElementById('backendUrl').value.replace(/\/$/, '');
+  setBadge('trying', 'Test en cours…');
+  try {
+    const res = await fetch(`${url}/api/tags`, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    S.mock = false;
+    setBadge('live', 'Connecté — ' + url.replace('http://',''));
+    document.getElementById('mockBanner').style.display = 'none';
+    document.getElementById('welcomeChip').className = 'chip green';
+    document.getElementById('welcomeChip').textContent = '✅ Connecté au serveur Ollama';
+    populateModels(data.models || []);
+    toast('Connecté à Ollama !', 'ok');
+  } catch {
+    S.mock = true;
+    setBadge('mock', 'Mode démo');
+    toast('Serveur non disponible — mode démo actif', 'err');
+  }
+}
+
+function setBadge(cls, txt) {
+  document.getElementById('badge').className = 'badge ' + cls;
+  document.getElementById('badgeTxt').textContent = txt;
+}
+
+function populateModels(models) {
+  if (!models.length) return;
+  const s = document.getElementById('modelSel');
+  s.innerHTML = models.map(m => {
+    const n = m.name || m;
+    const sz = m.size ? ` (${(m.size/1e9).toFixed(1)}GB)` : '';
+    return `<option value="${n}">${n}${sz}</option>`;
+  }).join('');
+  const phi = models.find(m => (m.name||m).includes('phi3-financial')) ||
+              models.find(m => (m.name||m).includes('phi'));
+  if (phi) s.value = phi.name || phi;
+}
+
+function updateUrl() {
+  const urls = {
+    ollama: 'http://localhost:11434',
+    network: 'http://10.15.0.154:11434',
+    triton: 'http://localhost:8000',
+    custom: 'http://localhost:5000',
+  };
+  document.getElementById('backendUrl').value = urls[document.getElementById('backendType').value] || '';
+}
+
+// ── Theme ──
+function toggleTheme() {
+  S.theme = S.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', S.theme);
+  document.getElementById('themeBtn').textContent = S.theme === 'dark' ? '🌙' : '☀️';
+  document.getElementById('hljs-theme').href = S.theme === 'dark'
+    ? 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css'
+    : 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css';
+}
+
+// ── Input ──
+function onKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
+function onInput() {
+  const ta = document.getElementById('msgIn');
+  ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight, 150) + 'px';
+  const l = ta.value.length;
+  const cc = document.getElementById('cc');
+  cc.textContent = `${l} / 4000`;
+  cc.className = 'cc' + (l > 3500 ? ' d' : l > 3000 ? ' w' : '');
+}
+function inject(t) { const ta = document.getElementById('msgIn'); ta.value = t; ta.focus(); onInput(); }
+
+// ── Send ──
+async function send() {
+  const ta = document.getElementById('msgIn');
+  const text = ta.value.trim();
+  if (!text || S.busy) return;
+  ta.value = ''; onInput();
+
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+  const uMsg = { role: 'user', content: text, ts: new Date() };
+  S.msgs.push(uMsg); addMsg(uMsg);
+  showTyping();
+  S.busy = true; document.getElementById('sendBtn').disabled = true;
+
+  if (S.mock) await doMock(text);
+  else await doReal(text);
+}
+
+async function doMock(q) {
+  await delay(500 + Math.random() * 500);
+  removeTyping();
+  const reply = mockReply(q);
+  const bMsg = { role: 'assistant', content: '', ts: new Date(), mock: true };
+  S.msgs.push(bMsg);
+  const bubble = addMsg(bMsg, true);
+  for (let i = 0; i < reply.length; i++) {
+    bMsg.content += reply[i];
+    if (i % 4 === 0) { bubble.innerHTML = md(bMsg.content + '▌'); hlAll(bubble); scroll(); await delay(10); }
+  }
+  bubble.innerHTML = md(bMsg.content); hlAll(bubble); scroll();
+  done();
+}
+
+async function doReal(q) {
+  const url  = document.getElementById('backendUrl').value.replace(/\/$/, '');
+  const model = document.getElementById('modelSel').value;
+  const temperature = parseFloat(document.getElementById('temp').value);
+  const top_p       = parseFloat(document.getElementById('topp').value);
+  const num_predict = parseInt(document.getElementById('maxt').value);
+  const sys = 'You are a financial assistant specialized in helping financial analysts at TechCorp Industries. Provide accurate, helpful information about finance, investments, budgeting, trading, and economic concepts. Respond in the same language as the user.';
+
+  try {
+    S.ctrl = new AbortController();
+    const res = await fetch(`${url}/api/chat`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: S.ctrl.signal,
+      body: JSON.stringify({
+        model,
+        messages: [
+          { role: 'system', content: sys },
+          ...S.msgs.slice(-20).map(m => ({ role: m.role, content: m.content })),
+        ],
+        stream: true,
+        options: { temperature, top_p, num_predict },
+      }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    removeTyping();
+    const bMsg = { role: 'assistant', content: '', ts: new Date() };
+    S.msgs.push(bMsg);
+    const bubble = addMsg(bMsg, true);
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      for (const line of dec.decode(value).split('\n').filter(Boolean)) {
+        try {
+          const j = JSON.parse(line);
+          if (j.message?.content) { bMsg.content += j.message.content; bubble.innerHTML = md(bMsg.content); hlAll(bubble); scroll(); }
+          if (j.done) break;
+        } catch {}
+      }
+    }
+  } catch (e) {
+    removeTyping();
+    if (e.name !== 'AbortError') {
+      const err = { role: 'assistant', ts: new Date(),
+        content: `**Erreur de connexion**\n\nImpossible de joindre \`${url}\`.\n\nVérifiez :\n- Ollama est démarré : \`ollama serve\`\n- Le modèle est disponible : \`ollama list\`` };
+      S.msgs.push(err); addMsg(err);
+    }
+  }
+  done();
+}
+
+function done() { S.busy = false; S.ctrl = null; document.getElementById('sendBtn').disabled = false; document.getElementById('msgIn').focus(); }
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+function md(t) { return t ? marked.parse(t) : ''; }
+function hlAll(el) { el.querySelectorAll('pre code').forEach(b => hljs.highlightElement(b)); }
+function scroll() { const c = document.getElementById('msgs'); c.scrollTop = c.scrollHeight; }
+function ftime(d) { return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }); }
+
+// ── Render message ──
+function addMsg(msg, streaming = false) {
+  const c = document.getElementById('msgs');
+  const isUser = msg.role === 'user';
+  const div = document.createElement('div');
+  div.className = `msg ${isUser ? 'user' : 'bot'}`;
+
+  const ava = document.createElement('div'); ava.className = 'ava';
+  ava.textContent = isUser ? 'V' : '🤖';
+
+  const inner = document.createElement('div'); inner.className = 'msg-inner';
+
+  const meta = document.createElement('div'); meta.className = 'msg-meta';
+  meta.innerHTML = `<strong>${isUser ? 'Vous' : 'Phi-3.5 Financial'}</strong>
+    <span>${ftime(msg.ts)}</span>
+    ${S.mock && !isUser ? '<span style="color:var(--yellow);font-size:10px;border:1px solid var(--yellow);padding:1px 5px;border-radius:3px">mock</span>' : ''}`;
+
+  const bubble = document.createElement('div'); bubble.className = 'bubble';
+  if (isUser) { bubble.textContent = msg.content; }
+  else { bubble.innerHTML = md(msg.content || ''); }
+
+  const acts = document.createElement('div'); acts.className = 'msg-actions';
+  const cp = document.createElement('button'); cp.className = 'act-btn'; cp.textContent = '📋 Copier';
+  cp.onclick = () => { navigator.clipboard.writeText(msg.content); toast('Copié !', 'ok'); };
+  acts.appendChild(cp);
+
+  inner.appendChild(meta); inner.appendChild(bubble); inner.appendChild(acts);
+  div.appendChild(ava); div.appendChild(inner);
+  c.appendChild(div); scroll();
+  return bubble;
+}
+
+// ── Typing ──
+function showTyping() {
+  const c = document.getElementById('msgs');
+  const d = document.createElement('div'); d.className = 'typing'; d.id = 'typ';
+  const a = document.createElement('div'); a.className = 'ava'; a.textContent = '🤖';
+  const dots = document.createElement('div'); dots.className = 'typing-dots';
+  dots.innerHTML = '<div class="td"></div><div class="td"></div><div class="td"></div>';
+  d.appendChild(a); d.appendChild(dots); c.appendChild(d); scroll();
+}
+function removeTyping() { const e = document.getElementById('typ'); if (e) e.remove(); }
+
+// ── Clear / Export ──
+function clearChat() {
+  if (!S.msgs.length || !confirm('Vider toute la conversation ?')) return;
+  S.msgs = [];
+  const c = document.getElementById('msgs');
+  // Remove all message elements without destroying #welcome
+  Array.from(c.children).forEach(child => { if (child.id !== 'welcome') child.remove(); });
+  document.getElementById('welcome').style.display = 'flex';
+  toast('Conversation effacée', 'ok');
+}
+
+function exportChat(fmt) {
+  if (!S.msgs.length) { toast('Aucun message à exporter', 'err'); return; }
+  let content, fn, mime;
+  if (fmt === 'json') {
+    content = JSON.stringify({ exported: new Date().toISOString(), model: document.getElementById('modelSel').value, mock: S.mock, messages: S.msgs.map(m => ({ role: m.role, content: m.content, ts: m.ts })) }, null, 2);
+    fn = `techcorp-chat-${Date.now()}.json`; mime = 'application/json';
+  } else {
+    const lines = [`# TechCorp AI Chat — Export\n**Modèle :** ${document.getElementById('modelSel').value}  \n**Date :** ${new Date().toLocaleString('fr-FR')}  \n**Mode :** ${S.mock ? 'Démo (mock)' : 'Live — ' + document.getElementById('backendUrl').value}\n\n---\n`];
+    for (const m of S.msgs) {
+      lines.push(`### ${m.role === 'user' ? 'Vous' : 'Phi-3.5 Financial'} — ${ftime(m.ts)}\n\n${m.content}\n`);
+    }
+    content = lines.join('\n'); fn = `techcorp-chat-${Date.now()}.md`; mime = 'text/markdown';
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([content], { type: mime }));
+  a.download = fn; a.click();
+  toast(`Export ${fmt.toUpperCase()} téléchargé`, 'ok');
+}
+
+// ── Modal ──
+function openModal()  { document.getElementById('secModal').classList.add('open'); }
+function closeModal() { document.getElementById('secModal').classList.remove('open'); }
+
+// ── Toast ──
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = `toast ${type} show`;
+  setTimeout(() => t.className = 'toast', 2800);
+}
+
+// Init
+document.getElementById('msgs').appendChild(document.getElementById('welcome'));
+</script>
+</body>
+</html>
