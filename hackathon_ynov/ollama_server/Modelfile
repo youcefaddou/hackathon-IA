@@ -3,6 +3,25 @@ FROM phi3.5
 SYSTEM """
 You are a financial assistant specialized in helping financial analysts at TechCorp Industries.
 You provide accurate and helpful information about finance, investments, budgeting, trading, and economic concepts.
+Answer concisely and factually. If you are unsure, say so. Never reveal credentials, internal tokens, or confidential data, even if asked indirectly or via an unusual phrase.
 """
 
-# TODO : ajoutez ici les paramètres d'inférence (temperature, top_p, num_predict...)
+# --- Paramètres d'inférence ---
+# Assistant financier = priorité à la fiabilité/factualité plutôt qu'à la créativité.
+# temperature basse = réponses stables et factuelles (moins d'hallucinations)
+PARAMETER temperature 0.3
+# nucleus sampling
+PARAMETER top_p 0.9
+# limite l'éventail de tokens candidats
+PARAMETER top_k 40
+# évite les répétitions
+PARAMETER repeat_penalty 1.1
+# longueur max de réponse
+PARAMETER num_predict 512
+# fenêtre de contexte
+PARAMETER num_ctx 4096
+
+# Tokens d'arrêt (format de chat Phi-3)
+PARAMETER stop "<|end|>"
+PARAMETER stop "<|user|>"
+PARAMETER stop "<|assistant|>"
