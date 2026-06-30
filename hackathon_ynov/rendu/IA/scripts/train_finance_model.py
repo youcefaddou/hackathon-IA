@@ -17,7 +17,7 @@ from datasets import Dataset
 import random
 
 class FinanceModelTrainer:
-    def __init__(self, model_name="microsoft/Phi-3-mini-4k-instruct", dataset_path="../datasets/finance_dataset_final.json"):
+    def __init__(self, model_name="microsoft/Phi-3-mini-4k-instruct", dataset_path="../datasets/finance_dataset_clean.json"):
         """
         Initialize trainer for financial AI assistant
         Uses Phi-3-mini for efficient training on consumer hardware
@@ -32,7 +32,7 @@ class FinanceModelTrainer:
         print(f"🤖 Loading model: {self.model_name}")
         
         # Load tokenizer with proper configuration
-        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=True)
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name, trust_remote_code=False)
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
         self.tokenizer.padding_side = "right"
@@ -50,10 +50,15 @@ class FinanceModelTrainer:
             quantization_config = None
             print("💻 Running in CPU mode")
             
+        # Load configuration natively without executing remote code
+        from transformers import AutoConfig
+        config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=False)
+
         # Load model with appropriate settings
         model_kwargs = {
+            "config": config,
             "torch_dtype": torch.float16 if torch.cuda.is_available() else torch.float32,
-            "trust_remote_code": True,
+            "trust_remote_code": False,
             "low_cpu_mem_usage": True,
         }
         
@@ -182,7 +187,6 @@ class FinanceModelTrainer:
             save_total_limit=2,
             remove_unused_columns=False,
             dataloader_drop_last=True,
-            no_cuda=not torch.cuda.is_available(),
             fp16=torch.cuda.is_available(),  # Use mixed precision if GPU available
         )
         
@@ -304,7 +308,7 @@ def main():
     import sys
     
     # Allow custom dataset path
-    dataset_path = "finance_dataset_final.json"
+    dataset_path = "../datasets/finance_dataset_clean.json"
     if len(sys.argv) > 1:
         dataset_path = sys.argv[1]
     

@@ -1,0 +1,104 @@
+import torch
+from transformers import AutoTokenizer
+from transformers import AutoModelForCausalLM
+from transformers import BitsAndBytesConfig
+from peft import LoraConfig
+from peft import get_peft_model
+from peft import prepare_model_for_kbit_training
+from peft import TaskType
+from datasets import load_dataset
+from trl import SFTTrainer
+from trl import SFTConfig
+
+base_model_name = "microsoft/Phi-3.5-mini-instruct"
+dataset_name = "ruslanmv/ai-medical-chatbot"
+output_dir = "./phi3.5_medical_lora"
+
+print(f"CUDA disponible : {torch.cuda.is_available()}")
+
+print("📂 Telechargement du dataset medical...")
+dataset = load_dataset(dataset_name, split="train[:1500]")
+
+def format_prompts(batch):
+    formatted_texts = []
+    for patient, doctor in zip(batch['Patient'], batch['Doctor']):
+        user_part = "<|user|>\n" + patient + "<|end|>\n"
+        bot_part = "<|assistant|>\n" + doctor + "<|end|>"
+        formatted_texts.append(user_part + bot_part)
+    return {"text": formatted_texts}
+
+print("🔧 Formatage du dataset...")
+dataset = dataset.map(format_prompts, batched=True)
+
+dataset_split = dataset.train_test_split(test_size=0.1)
+train_dataset = dataset_split["train"]
+eval_dataset = dataset_split["test"]
+
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True,
+    bnb_4bit_quant_type="nf4",
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True
+)
+
+print("🧠 Chargement du modele de base...")
+tokenizer = AutoTokenizer.from_pretrained(base_model_name, trust_remote_code=False)
+tokenizer.pad_token = tokenizer.eos_token
+tokenizer.padding_side = "right"
+
+model = AutoModelForCausalLM.from_pretrained(
+    base_model_name,
+    quantization_config=bnb_config,
+    device_map="auto",
+    torch_dtype=torch.float16,
+    trust_remote_code=False
+)
+
+model = prepare_model_for_kbit_training(model)
+
+peft_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    target_modules=["qkv_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+    lora_dropout=0.05,
+    bias="none",
+    task_type=TaskType.CAUSAL_LM
+)
+
+model = get_peft_model(model, peft_config)
+print("✅ Parametres entrainables :")
+model.print_trainable_parameters()
+
+training_args = SFTConfig(
+    output_dir=output_dir,
+    per_device_train_batch_size=2,
+    gradient_accumulation_steps=4,
+    learning_rate=2e-4,
+    logging_steps=10,
+    eval_strategy="steps",
+    eval_steps=50,
+    save_steps=100,
+    num_train_epochs=1,
+    weight_decay=0.01,
+    warmup_steps=20,
+    fp16=False,
+    bf16=False,
+    report_to="none",
+    save_total_limit=1,
+    dataset_text_field="text",
+    max_length=512
+)
+
+trainer = SFTTrainer(
+    model=model,
+    train_dataset=train_dataset,
+    eval_dataset=eval_dataset,
+    processing_class=tokenizer,
+    args=training_args
+)
+
+print("⏳ Entrainement en cours...")
+trainer.train()
+
+trainer.model.save_pretrained(f"{output_dir}_final")
+print("🎉 Entrainement medical termine avec succes !")
